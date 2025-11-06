@@ -21,15 +21,16 @@ pipeline = DeclutterPipeline()
 @app.post("/api/declutter")
 async def declutter(file: UploadFile = File(...), prompt: str = Form(default="")):
     img_bytes = await file.read()
-    result = pipeline.run(img_bytes, user_prompt=prompt)
+    result = pipeline.generate_and_process(img_bytes, user_prompt=prompt)
 
     buf = io.BytesIO()
     result["final_image"].save(buf, format="JPEG", quality=92)
     img_b64 = base64.b64encode(buf.getvalue()).decode("utf-8")
 
     return JSONResponse({
-        "prompt_used": result["prompt"],
-        "detected_classes": result["classes"],
+        "steps": result["steps"],
+        "prompt_used": result["prompt_used"],
+        "detected_classes": result["detected_classes"],
         "image_base64": f"data:image/jpeg;base64,{img_b64}"
     })
 

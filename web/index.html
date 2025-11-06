@@ -12,6 +12,9 @@
     button{padding:.7rem 1.1rem;border-radius:10px;border:1px solid #333;background:#111;color:#fff;cursor:pointer}
     input[type=file]{margin:.5rem 0}
     .small{color:#666;font-size:.9rem}
+    #steps-list li{padding:.5rem 0;border-bottom:1px solid #eee}
+    #steps-list li:last-child{border-bottom:none}
+    #steps-list li:before{content:"○ ";color:#666;margin-right:.5rem}
   </style>
 </head>
 <body>
@@ -20,9 +23,14 @@
 
   <div class="card">
     <input id="file" type="file" accept="image/*" />
-    <input id="prompt" type="text" placeholder="Optional: 'clean modern living room'" style="width:100%;padding:.6rem;margin:.4rem 0"/>
+    <input id="prompt" type="text" placeholder="Optional: 'remove bottles and cups'" style="width:100%;padding:.6rem;margin:.4rem 0"/>
     <button id="go">Declutter</button>
     <div id="status" class="small"></div>
+  </div>
+
+  <div id="steps-container" class="card" style="display:none;margin-top:1rem">
+    <h3>Decluttering Steps:</h3>
+    <ul id="steps-list" style="list-style:none;padding-left:0"></ul>
   </div>
 
   <div class="row" style="margin-top:1rem">
@@ -45,6 +53,8 @@ const statusEl = document.getElementById('status');
 const origEl = document.getElementById('orig');
 const outEl = document.getElementById('out');
 const goBtn = document.getElementById('go');
+const stepsContainer = document.getElementById('steps-container');
+const stepsList = document.getElementById('steps-list');
 
 fileEl.addEventListener('change', () => {
   const f = fileEl.files?.[0];
@@ -54,7 +64,14 @@ fileEl.addEventListener('change', () => {
 goBtn.addEventListener('click', async () => {
   const f = fileEl.files?.[0];
   if (!f) { alert('Choose an image first.'); return; }
+
+  // Reset UI
   statusEl.textContent = 'Processing… this can take ~10–30s on GPU.';
+  stepsContainer.style.display = 'none';
+  stepsList.innerHTML = '';
+  outEl.src = '';
+  document.getElementById('meta').textContent = '';
+
   const fd = new FormData();
   fd.append('file', f);
   fd.append('prompt', promptEl.value);
@@ -62,6 +79,16 @@ goBtn.addEventListener('click', async () => {
   try {
     const res = await fetch(`${API}/api/declutter`, { method:'POST', body:fd });
     const data = await res.json();
+
+    // Display steps
+    if (data.steps && data.steps.length > 0) {
+      stepsContainer.style.display = 'block';
+      stepsList.innerHTML = data.steps.map(step =>
+        `<li>${step.description}</li>`
+      ).join('');
+    }
+
+    // Display result
     outEl.src = data.image_base64;
     document.getElementById('meta').textContent =
       `Prompt used: ${data.prompt_used} | Detected: ${data.detected_classes.join(', ') || 'none'}`;
