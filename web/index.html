@@ -1,0 +1,76 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>AI Declutter Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body{font-family:system-ui,Arial,sans-serif;max-width:900px;margin:2rem auto;padding:0 1rem}
+    .row{display:flex;gap:1rem;flex-wrap:wrap}
+    .card{border:1px solid #ddd;padding:1rem;border-radius:12px;flex:1;min-width:260px}
+    img{max-width:100%;border-radius:8px}
+    button{padding:.7rem 1.1rem;border-radius:10px;border:1px solid #333;background:#111;color:#fff;cursor:pointer}
+    input[type=file]{margin:.5rem 0}
+    .small{color:#666;font-size:.9rem}
+  </style>
+</head>
+<body>
+  <h1>AI Declutter</h1>
+  <p class="small">Upload a photo. The server will detect clutter with YOLOv8 and remove it using Stable Diffusion inpainting. Optionally add your own style prompt.</p>
+
+  <div class="card">
+    <input id="file" type="file" accept="image/*" />
+    <input id="prompt" type="text" placeholder="Optional: 'clean modern living room'" style="width:100%;padding:.6rem;margin:.4rem 0"/>
+    <button id="go">Declutter</button>
+    <div id="status" class="small"></div>
+  </div>
+
+  <div class="row" style="margin-top:1rem">
+    <div class="card">
+      <h3>Original</h3>
+      <img id="orig" alt="Original preview"/>
+    </div>
+    <div class="card">
+      <h3>Decluttered</h3>
+      <img id="out" alt="Output preview"/>
+      <div id="meta" class="small"></div>
+    </div>
+  </div>
+
+<script>
+const API = (location.hostname === 'localhost' ? 'http://localhost:8000' : window.location.origin);
+const fileEl = document.getElementById('file');
+const promptEl = document.getElementById('prompt');
+const statusEl = document.getElementById('status');
+const origEl = document.getElementById('orig');
+const outEl = document.getElementById('out');
+const goBtn = document.getElementById('go');
+
+fileEl.addEventListener('change', () => {
+  const f = fileEl.files?.[0];
+  if (f) origEl.src = URL.createObjectURL(f);
+});
+
+goBtn.addEventListener('click', async () => {
+  const f = fileEl.files?.[0];
+  if (!f) { alert('Choose an image first.'); return; }
+  statusEl.textContent = 'Processing… this can take ~10–30s on GPU.';
+  const fd = new FormData();
+  fd.append('file', f);
+  fd.append('prompt', promptEl.value);
+
+  try {
+    const res = await fetch(`${API}/api/declutter`, { method:'POST', body:fd });
+    const data = await res.json();
+    outEl.src = data.image_base64;
+    document.getElementById('meta').textContent =
+      `Prompt used: ${data.prompt_used} | Detected: ${data.detected_classes.join(', ') || 'none'}`;
+    statusEl.textContent = 'Done.';
+  } catch (e) {
+    console.error(e);
+    statusEl.textContent = 'Error. Check console / server logs.';
+  }
+});
+</script>
+</body>
+</html>

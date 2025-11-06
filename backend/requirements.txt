@@ -1,0 +1,19 @@
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+pillow==10.4.0
+
+# PyTorch CUDA 12.1 build (works with g4dn T4 + your Docker image)
+torch==2.3.1
+torchvision==0.18.1
+
+transformers==4.43.3
+diffusers==0.29.2
+safetensors==0.4.3
+accelerate==0.33.0
+ultralytics==8.3.33
+
+# NumPy pinned below 2.0 to avoid ABI issues
+numpy<2.0
+
+python-dotenv==1.0.1
+
